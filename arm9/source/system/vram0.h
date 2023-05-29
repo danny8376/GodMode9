@@ -18,8 +18,8 @@
 #define VRAM0_EASTER_BIN       "easter.bin"
 
 
-#define VRAM0_OFFSET    0x080C0000
-#define VRAM0_LIMIT     0x00040000
+#define VRAM0_OFFSET    0x080A0000
+#define VRAM0_LIMIT     0x00060000
 
 #define TARDATA         ((void*) VRAM0_OFFSET)
 #define TARDATA_(off)   ((void*) (u32) (VRAM0_OFFSET + (off)))

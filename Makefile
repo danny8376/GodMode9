@@ -18,9 +18,10 @@ export COMMON_DIR := ../common
 # Definitions for initial RAM disk
 VRAM_OUT    := $(OUTDIR)/vram0.tar
 VRAM_DATA   := data
-VRAM_FLAGS  := --make-new --path-limit 99 --size-limit 262144
+VRAM_FLAGS  := --make-new --path-limit 99 --size-limit 393216
 ifeq ($(NTRBOOT),1)
 	VRAM_SCRIPTS := resources/gm9/scripts
+	VRAM_FIRMS := resources/firms
 endif
 
 ifeq ($(OS),Windows_NT)
@@ -83,21 +84,21 @@ release: clean unmarked_readme
 vram0:
 	@mkdir -p "$(OUTDIR)"
 	@echo "Creating $(VRAM_OUT)"
-	@$(PY3) utils/add2tar.py $(VRAM_FLAGS) $(VRAM_OUT) $(shell ls -d $(SPLASH) $(OVERRIDE_FONT) $(VRAM_DATA)/* $(VRAM_SCRIPTS))
+	@$(PY3) utils/add2tar.py $(VRAM_FLAGS) $(VRAM_OUT) $(shell ls -d $(SPLASH) $(OVERRIDE_FONT) $(VRAM_DATA)/* $(VRAM_SCRIPTS) $(VRAM_FIRMS))
 
 %.elf: .FORCE
 	@echo "Building $@"
 	@$(MAKE) --no-print-directory -C $(@D)
 
 firm: $(ELF) vram0
-	@test `wc -c <$(VRAM_OUT)` -le 262144
+	@test `wc -c <$(VRAM_OUT)` -le 393216
 	@mkdir -p $(call dirname,"$(FIRM)") $(call dirname,"$(FIRMD)")
 	@echo "[FLAVOR] $(FLAVOR)"
 	@echo "[VERSION] $(VERSION)"
 	@echo "[BUILD] $(DBUILTL)"
 	@echo "[FIRM] $(FIRM)"
-	@$(PY3) -m firmtool build $(FIRM) $(FTFLAGS) -g -A 0x80C0000 -D $(ELF) $(VRAM_OUT) -C NDMA XDMA memcpy
+	@$(PY3) -m firmtool build $(FIRM) $(FTFLAGS) -g -A 0x80A0000 -D $(ELF) $(VRAM_OUT) -C NDMA XDMA memcpy
 	@echo "[FIRM] $(FIRMD)"
-	@$(PY3) -m firmtool build $(FIRMD) $(FTDFLAGS) -g -A 0x80C0000 -D $(ELF) $(VRAM_OUT)  -C NDMA XDMA memcpy
+	@$(PY3) -m firmtool build $(FIRMD) $(FTDFLAGS) -g -A 0x80A0000 -D $(ELF) $(VRAM_OUT)  -C NDMA XDMA memcpy
 
 .FORCE:

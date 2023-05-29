@@ -47,5 +47,8 @@ desktop.ini
 # Build leftovers
 /data/README_internal.md
 
+# Embed Firms, custom, don't push to repo
+/resources/firms
+
 # User additions
 /zzz_backup
