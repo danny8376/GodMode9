@@ -18,7 +18,7 @@ export COMMON_DIR := ../common
 # Definitions for initial RAM disk
 VRAM_OUT    := $(OUTDIR)/vram0.tar
 VRAM_DATA   := data
-VRAM_FLAGS  := --make-new --path-limit 99 --size-limit 262144
+VRAM_FLAGS  := --make-new --path-limit 99 --size-limit 15728640
 ifeq ($(NTRBOOT),1)
 	VRAM_SCRIPTS := resources/gm9/scripts
 endif
@@ -90,14 +90,14 @@ vram0:
 	@$(MAKE) --no-print-directory -C $(@D)
 
 firm: $(ELF) vram0
-	@test `wc -c <$(VRAM_OUT)` -le 262144
+	@test `wc -c <$(VRAM_OUT)` -le 15728640
 	@mkdir -p $(call dirname,"$(FIRM)") $(call dirname,"$(FIRMD)")
 	@echo "[FLAVOR] $(FLAVOR)"
 	@echo "[VERSION] $(VERSION)"
 	@echo "[BUILD] $(DBUILTL)"
 	@echo "[FIRM] $(FIRM)"
-	@$(PY3) -m firmtool build $(FIRM) $(FTFLAGS) -g -A 0x80C0000 -D $(ELF) $(VRAM_OUT) -C NDMA XDMA memcpy
+	@$(PY3) -m firmtool build $(FIRM) $(FTFLAGS) -g -A 0x22800000 -D $(ELF) $(VRAM_OUT) -C NDMA XDMA memcpy
 	@echo "[FIRM] $(FIRMD)"
-	@$(PY3) -m firmtool build $(FIRMD) $(FTDFLAGS) -g -A 0x80C0000 -D $(ELF) $(VRAM_OUT)  -C NDMA XDMA memcpy
+	@$(PY3) -m firmtool build $(FIRMD) $(FTDFLAGS) -g -A 0x22800000 -D $(ELF) $(VRAM_OUT)  -C NDMA XDMA memcpy
 
 .FORCE:
