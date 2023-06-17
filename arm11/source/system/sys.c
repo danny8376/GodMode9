@@ -107,6 +107,9 @@ void SYS_CoreZeroInit(void)
 		mmuMapArea(0x20000000, 0x20000000, 128UL << 20, MMU_FLAGS(MMU_CACHE_WB, MMU_READ_WRITE, 1, 1));
 	}
 
+	// VRAM Drive to FCRAM
+	memcpy(((u8*)0x22800000), ((u8*)0x18000000), 0x00600000);
+
 	// screen init magicks
 	TIMER_WaitMS(64);
 
