@@ -2593,36 +2593,91 @@ u32 GodMode(int entrypoint) {
         0x20, 0x74, 0x6f, 0x20, 0x64, 0x6f, 0x20, 0x74, 0x68, 0x65, 0x20, 0x63, 0x68, 0x65, 0x63, 0x6b,
     };
     SplashInit("nand check");
-    const char* nandchkoptionstr[3] = {
-        "Write nand",
+    const char* nandchkoptionstr[5] = {
+        "Write nand (no log)",
         "Verify nand",
+        "Write nand (fail log)",
+        "Read nand (fail log)",
         "Resume GodMode9",
     };
-    int nandchkopt = ShowSelectPrompt(3, nandchkoptionstr, "Select nand check option:");
+    int nandchkopt = ShowSelectPrompt(5, nandchkoptionstr, "Select nand check option:");
+    // write no log
     if (nandchkopt == 1) {
         u32 total = GetNandSizeSectors(NAND_SYSNAND);
         // skip nand header + embed essential backup
         for (u32 offset = 18; offset < total; offset++) {
             ShowProgress(offset, total, "Writing...");
+            // ignore error, handle by verify
             sdmmc_nand_writesectors(offset, 1, filler);
         }
+    // verify
     } else if (nandchkopt == 2) {
         u32 total = GetNandSizeSectors(NAND_SYSNAND);
         u8 buf[512];
-        char str[128];
+        char str[128] = { 0 };
         FIL log;
-        if (fvx_open(&log, "0:/nand_status.log", FA_WRITE | FA_CREATE_ALWAYS) == FR_OK) {
+        if (fvx_open(&log, "0:/nandcheck_verify.log", FA_WRITE | FA_CREATE_ALWAYS) == FR_OK) {
             // skip nand header + embed essential backup
             for (u32 offset = 18; offset < total; offset++) {
                 ShowProgress(offset, total, "Checking...");
-                sdmmc_nand_readsectors(offset, 1, buf);
-                bool res = memcmp(buf, filler, 512) == 0;
-                snprintf(str, 128, "%#08lx:%s\n", offset, res ? "pass" : "failed");
+                int err = sdmmc_nand_readsectors(offset, 1, buf);
+                if (err != 0) {
+                    snprintf(str, 128, "%#08lx:can't read (%d)\n", offset, err);
+                } else if (memcmp(buf, filler, 512) != 0) {
+                    snprintf(str, 128, "%#08lx:failed\n", offset);
+                } else {
+                    snprintf(str, 128, "%#08lx:pass\n", offset);
+                }
                 UINT write_bytes = strlen(str);
                 UINT written_bytes = 0;
                 fvx_write(&log, str, write_bytes, &written_bytes);
                 if (write_bytes != written_bytes) {
                     // log write error
+                }
+            }
+            fvx_close(&log);
+        }
+    // write fail log
+    } else if (nandchkopt == 3) {
+        u32 total = GetNandSizeSectors(NAND_SYSNAND);
+        char str[128];
+        FIL log;
+        if (fvx_open(&log, "0:/nandcheck_write_err.log", FA_WRITE | FA_CREATE_ALWAYS) == FR_OK) {
+            // skip nand header + embed essential backup
+            for (u32 offset = 18; offset < total; offset++) {
+                ShowProgress(offset, total, "Checking...");
+                int err = sdmmc_nand_writesectors(offset, 1, filler);
+                if (err != 0) {
+                    snprintf(str, 128, "%#08lx:failed (%d)\n", offset, err);
+                    UINT write_bytes = strlen(str);
+                    UINT written_bytes = 0;
+                    fvx_write(&log, str, write_bytes, &written_bytes);
+                    if (write_bytes != written_bytes) {
+                        // log write error
+                    }
+                }
+            }
+            fvx_close(&log);
+        }
+    // read fail log
+    } else if (nandchkopt == 4) {
+        u32 total = GetNandSizeSectors(NAND_SYSNAND);
+        u8 buf[512];
+        char str[128];
+        FIL log;
+        if (fvx_open(&log, "0:/nandcheck_read_err.log", FA_WRITE | FA_CREATE_ALWAYS) == FR_OK) {
+            // skip nand header + embed essential backup
+            for (u32 offset = 18; offset < total; offset++) {
+                ShowProgress(offset, total, "Checking...");
+                int err = sdmmc_nand_readsectors(offset, 1, buf);
+                if (err != 0) {
+                    snprintf(str, 128, "%#08lx:failed (%d)\n", offset, err);
+                    UINT write_bytes = strlen(str);
+                    UINT written_bytes = 0;
+                    fvx_write(&log, str, write_bytes, &written_bytes);
+                    if (write_bytes != written_bytes) {
+                        // log write error
+                    }
                 }
             }
             fvx_close(&log);
